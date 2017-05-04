@@ -1156,16 +1156,14 @@ public class DataToCellConverter
             {
             "omim_id",
             "omim_id_code",
-            "omim_id_combined",
-            "diagnosis_notes"
+            "omim_id_combined"
             };
         /* FIXME These will not work properly in different configurations */
         String[][] headerIds =
             {
             { "name" },
             { "id" },
-            { "name", "id" },
-            { "notes" }
+            { "name", "id" }
             };
         Set<String> present = addHeaders(fieldIds, headerIds, enabledFields);
         if (present.isEmpty()) {
@@ -1176,7 +1174,7 @@ public class DataToCellConverter
 
         DataSection headerSection = new DataSection();
         int hX = 0;
-        for (String fieldId : Arrays.asList("name", "id", "notes")) {
+        for (String fieldId : Arrays.asList("name", "id")) {
             if (!present.contains(fieldId)) {
                 continue;
             }
@@ -1234,15 +1232,6 @@ public class DataToCellConverter
                 DataCell cell = new DataCell("", x, y);
                 bodySection.addCell(cell);
                 x++;
-            }
-        }
-        /* Notes export */
-        if (present.contains("notes")) {
-            PatientData<String> notes = patient.getData("notes");
-            String diagnosisNotes = notes != null ? notes.get("diagnosis_notes") : "";
-            for (DataCell cell : ConversionHelpers.preventOverflow(diagnosisNotes, bodySection.getMaxX() + 1, 0)) {
-                cell.setMultiline();
-                bodySection.addCell(cell);
             }
         }
 
@@ -1333,6 +1322,53 @@ public class DataToCellConverter
                 bodySection.addCell(cell);
             }
             y++;
+        }
+
+        return bodySection;
+    }
+
+    public DataSection diagnosisNotesHeader(Set<String> enabledFields) throws Exception
+    {
+        String sectionName = "diagnosis_notes";
+
+        Set<String> present = new LinkedHashSet<>();
+        if (enabledFields.remove(sectionName)) {
+            present.add(sectionName);
+        }
+        this.enabledHeaderIdsBySection.put(sectionName, present);
+
+        DataSection headerSection = new DataSection();
+
+        if (present.isEmpty()) {
+            return null;
+        }
+
+        DataCell headerCell =
+            new DataCell(this.translationManager.translate("phenotips.export.excel.label.diagnosisNotes"), 0,
+                0, StyleOption.LARGE_HEADER);
+        headerCell.addStyle(StyleOption.HEADER);
+        headerSection.addCell(headerCell);
+
+        return headerSection;
+    }
+
+    public DataSection diagnosisNotesBody(Patient patient)
+    {
+        String sectionName = "diagnosis_notes";
+        Set<String> present = this.enabledHeaderIdsBySection.get(sectionName);
+        if (present == null || present.isEmpty()) {
+            return null;
+        }
+
+        DataSection bodySection = new DataSection();
+
+        if (present.contains("diagnosis_notes")) {
+            PatientData<String> notes = patient.getData("notes");
+            String comments = notes != null ? notes.get("diagnosis_notes") : "";
+            for (DataCell gcell : ConversionHelpers.preventOverflow(comments, 0, 0)) {
+                gcell.setMultiline();
+                bodySection.addCell(gcell);
+            }
         }
 
         return bodySection;
