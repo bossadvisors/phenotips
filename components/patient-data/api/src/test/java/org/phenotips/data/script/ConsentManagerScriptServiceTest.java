@@ -1,3 +1,20 @@
+/*
+ * See the NOTICE file distributed with this work for additional
+ * information regarding copyright ownership.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see http://www.gnu.org/licenses/
+ */
 package org.phenotips.data.script;
 
 import org.json.JSONArray;
@@ -30,9 +47,6 @@ public class ConsentManagerScriptServiceTest {
     private Patient patient;
 
     @Mock
-    private JSONArray arr;
-
-    @Mock
     private Consent consent1;
 
     @Mock
@@ -54,17 +68,6 @@ public class ConsentManagerScriptServiceTest {
     public void hasNoConsentTest() throws ComponentLookupException {
         when(this.consentManager.hasConsent("P0123456", "consent")).thenReturn(false);
         Assert.assertFalse(this.mocker.getComponentUnderTest().hasConsent("P0123456", "consent"));
-    }
-
-    @Test
-    public void getAllConsentsForPatientTest() throws ComponentLookupException {
-        Set<Consent> consents = new LinkedHashSet<>();
-        consents.add(consent1);
-        consents.add(consent2);
-
-        when(this.consentManager.toJSON(consents)).thenReturn(this.arr);
-        // Debug this assertion
-        Assert.assertSame(this.arr,this.mocker.getComponentUnderTest().getAllConsentsForPatient(Patient.JSON_KEY_ID));
     }
 
     @Test
