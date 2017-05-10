@@ -17,41 +17,34 @@
  */
 package org.phenotips.data.permissions.internal;
 
-import org.mockito.stubbing.OngoingStubbing;
-import org.phenotips.data.Patient;
-import org.phenotips.data.PatientRepository;
-import org.phenotips.data.permissions.AccessLevel;
-import org.phenotips.data.permissions.PatientAccess;
-import org.phenotips.data.permissions.PermissionsManager;
-import org.phenotips.data.permissions.Visibility;
-import org.phenotips.security.authorization.AuthorizationModule;
-
-import org.xwiki.component.manager.ComponentLookupException;
-import org.xwiki.model.reference.DocumentReference;
-import org.xwiki.security.authorization.Right;
-import org.xwiki.test.mockito.MockitoComponentMockingRule;
-import org.xwiki.users.User;
-
+import org.apache.xmlbeans.impl.xb.xsdschema.Public;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.phenotips.data.Patient;
+import org.phenotips.data.PatientRepository;
+import org.phenotips.data.permissions.AccessLevel;
+import org.phenotips.data.permissions.PatientAccess;
+import org.phenotips.data.permissions.PermissionsManager;
+import org.phenotips.data.permissions.internal.visibility.OpenVisibility;
+import org.phenotips.data.permissions.internal.visibility.PublicVisibility;
+import org.phenotips.security.authorization.AuthorizationModule;
+import org.xwiki.component.manager.ComponentLookupException;
+import org.xwiki.model.reference.DocumentReference;
+import org.xwiki.security.authorization.Right;
+import org.xwiki.test.mockito.MockitoComponentMockingRule;
+import org.xwiki.users.User;
+import org.phenotips.data.permissions.Visibility;
 
 import static org.mockito.Mockito.when;
 
-/**
- * Tests for the {@link CollaboratorAccessAuthorizationModule owner granted access} {@link AuthorizationModule}
- * component.
- *
- * @version $Id$
- */
-public class CollaboratorAccessAuthorizationModuleTest
-{
+public class VisibilityAccessAuthorizationModuleTest {
     @Rule
     public final MockitoComponentMockingRule<AuthorizationModule> mocker =
-        new MockitoComponentMockingRule<AuthorizationModule>(CollaboratorAccessAuthorizationModule.class);
+            new MockitoComponentMockingRule<AuthorizationModule>(VisibilityAccessAuthorizationModule.class);
 
     @Mock
     private User user;
@@ -76,6 +69,15 @@ public class CollaboratorAccessAuthorizationModuleTest
     @Mock
     private AccessLevel requestedAccess;
 
+    @Mock
+    private OpenVisibility open;
+
+    @Mock
+    private PublicVisibility publicVis;
+
+    @Mock
+    private Visibility visibility;
+
     @Before
     public void setupMocks()
     {
@@ -84,45 +86,82 @@ public class CollaboratorAccessAuthorizationModuleTest
     }
 
     @Test
-    public void noActionWithLowerLevelCollaborator() throws ComponentLookupException
-    {
+    public void openEditVisibilityTest() throws ComponentLookupException {
         PatientRepository repo = this.mocker.getInstance(PatientRepository.class);
         when(repo.get("xwiki:data.P01")).thenReturn(this.patient);
         PermissionsManager pm = this.mocker.getInstance(PermissionsManager.class);
         when(pm.getPatientAccess(this.patient)).thenReturn(this.pAccess);
+        when(pm.getDefaultVisibility()).thenReturn(this.open);
+        when(pm.getDefaultVisibility().getName()).thenReturn("open");
         when(this.pAccess.getAccessLevel(this.userProfile)).thenReturn(this.grantedAccess);
-        when(this.right.getName()).thenReturn("edit");
-        when(pm.resolveAccessLevel("edit")).thenReturn(this.requestedAccess);
-        when(this.grantedAccess.compareTo(this.requestedAccess)).thenReturn(-1);
-        Assert.assertNull(this.mocker.getComponentUnderTest().hasAccess(this.user, this.right, this.doc));
-    }
 
-    @Test
-    public void accessGrantedWithSameLevelCollaborator() throws ComponentLookupException
-    {
-        PatientRepository repo = this.mocker.getInstance(PatientRepository.class);
-        when(repo.get("xwiki:data.P01")).thenReturn(this.patient);
-        PermissionsManager pm = this.mocker.getInstance(PermissionsManager.class);
-        when(pm.getPatientAccess(this.patient)).thenReturn(this.pAccess);
-        when(this.pAccess.getAccessLevel(this.userProfile)).thenReturn(this.grantedAccess);
+        when(this.visibility.getName()).thenReturn("open");
+        when(pm.resolveVisibility("open")).thenReturn(this.visibility);
         when(this.right.getName()).thenReturn("edit");
         when(pm.resolveAccessLevel("edit")).thenReturn(this.requestedAccess);
+
+        when(this.visibility.compareTo(this.open)).thenReturn(0);
         when(this.grantedAccess.compareTo(this.requestedAccess)).thenReturn(0);
         Assert.assertTrue(this.mocker.getComponentUnderTest().hasAccess(this.user, this.right, this.doc));
     }
 
     @Test
-    public void accessGrantedWithHigherLevelCollaborator() throws ComponentLookupException
+    public void publicViewVisibilityTest() throws ComponentLookupException {
+        PatientRepository repo = this.mocker.getInstance(PatientRepository.class);
+        when(repo.get("xwiki:data.P01")).thenReturn(this.patient);
+        PermissionsManager pm = this.mocker.getInstance(PermissionsManager.class);
+        when(pm.getPatientAccess(this.patient)).thenReturn(this.pAccess);
+        when(pm.getDefaultVisibility()).thenReturn(this.publicVis);
+        when(pm.getDefaultVisibility().getName()).thenReturn("public");
+        when(this.pAccess.getAccessLevel(this.userProfile)).thenReturn(this.grantedAccess);
+
+        when(this.visibility.getName()).thenReturn("public");
+        when(pm.resolveVisibility("public")).thenReturn(this.visibility);
+        when(this.right.getName()).thenReturn("view");
+        when(pm.resolveAccessLevel("view")).thenReturn(this.requestedAccess);
+
+        when(this.visibility.compareTo(this.publicVis)).thenReturn(0);
+        when(this.grantedAccess.compareTo(this.requestedAccess)).thenReturn(0);
+        Assert.assertTrue(this.mocker.getComponentUnderTest().hasAccess(this.user, this.right, this.doc));
+    }
+
+    @Test
+    public void incorrectPermissionsTest() throws ComponentLookupException {
+        PatientRepository repo = this.mocker.getInstance(PatientRepository.class);
+        when(repo.get("xwiki:data.P01")).thenReturn(this.patient);
+        PermissionsManager pm = this.mocker.getInstance(PermissionsManager.class);
+        when(pm.getPatientAccess(this.patient)).thenReturn(this.pAccess);
+        when(pm.getDefaultVisibility()).thenReturn(this.publicVis);
+        when(pm.getDefaultVisibility().getName()).thenReturn("hidden");
+        when(this.pAccess.getAccessLevel(this.userProfile)).thenReturn(this.grantedAccess);
+
+        when(this.visibility.getName()).thenReturn("hidden");
+        when(pm.resolveVisibility("hidden")).thenReturn(this.visibility);
+        when(this.right.getName()).thenReturn("none");
+        when(pm.resolveAccessLevel("none")).thenReturn(this.requestedAccess);
+
+        when(this.visibility.compareTo(this.publicVis)).thenReturn(0);
+        when(this.grantedAccess.compareTo(this.requestedAccess)).thenReturn(0);
+        Assert.assertNull(this.mocker.getComponentUnderTest().hasAccess(this.user, this.right, this.doc));
+
+    }
+
+    @Test
+    public void noActionWithUnknownRight() throws ComponentLookupException
     {
         PatientRepository repo = this.mocker.getInstance(PatientRepository.class);
         when(repo.get("xwiki:data.P01")).thenReturn(this.patient);
         PermissionsManager pm = this.mocker.getInstance(PermissionsManager.class);
         when(pm.getPatientAccess(this.patient)).thenReturn(this.pAccess);
+        when(pm.getDefaultVisibility()).thenReturn(this.publicVis);
+        when(pm.getDefaultVisibility().getName()).thenReturn("hidden");
         when(this.pAccess.getAccessLevel(this.userProfile)).thenReturn(this.grantedAccess);
-        when(this.right.getName()).thenReturn("edit");
-        when(pm.resolveAccessLevel("edit")).thenReturn(this.requestedAccess);
-        when(this.grantedAccess.compareTo(this.requestedAccess)).thenReturn(1);
-        Assert.assertTrue(this.mocker.getComponentUnderTest().hasAccess(this.user, this.right, this.doc));
+
+        when(this.visibility.getName()).thenReturn("hidden");
+        when(pm.resolveVisibility("hidden")).thenReturn(this.visibility);
+        when(this.right.getName()).thenReturn("manage");
+        when(pm.resolveAccessLevel("manage")).thenReturn(null);
+        Assert.assertNull(this.mocker.getComponentUnderTest().hasAccess(this.user, this.right, this.doc));
     }
 
     @Test
@@ -136,38 +175,12 @@ public class CollaboratorAccessAuthorizationModuleTest
     {
         Assert.assertNull(this.mocker.getComponentUnderTest().hasAccess(null, this.right, this.doc));
         Assert.assertNull(this.mocker.getComponentUnderTest().hasAccess(this.user, this.right, null));
-        Assert.assertNull(this.mocker.getComponentUnderTest().hasAccess(this.user, null, this.doc));
-    }
-
-    @Test
-    public void noActionWithUnknownRight() throws ComponentLookupException
-    {
-        PatientRepository repo = this.mocker.getInstance(PatientRepository.class);
-        when(repo.get("xwiki:data.P01")).thenReturn(this.patient);
-        PermissionsManager pm = this.mocker.getInstance(PermissionsManager.class);
-        when(pm.getPatientAccess(this.patient)).thenReturn(this.pAccess);
-        when(this.pAccess.getAccessLevel(this.userProfile)).thenReturn(this.grantedAccess);
-        when(this.right.getName()).thenReturn("manage");
-        when(pm.resolveAccessLevel("manage")).thenReturn(null);
-        Assert.assertNull(this.mocker.getComponentUnderTest().hasAccess(this.user, this.right, this.doc));
-    }
-
-    @Test
-    public void noActionWithNoGrantedAccess() throws ComponentLookupException
-    {
-        PatientRepository repo = this.mocker.getInstance(PatientRepository.class);
-        when(repo.get("xwiki:data.P01")).thenReturn(this.patient);
-        PermissionsManager pm = this.mocker.getInstance(PermissionsManager.class);
-        when(pm.getPatientAccess(this.patient)).thenReturn(this.pAccess);
-        when(this.pAccess.getAccessLevel(this.userProfile)).thenReturn(null);
-        when(this.right.getName()).thenReturn("edit");
-        when(pm.resolveAccessLevel("edit")).thenReturn(this.requestedAccess);
-        Assert.assertNull(this.mocker.getComponentUnderTest().hasAccess(this.user, this.right, this.doc));
     }
 
     @Test
     public void expectedPriority() throws ComponentLookupException
     {
-        Assert.assertEquals(350, this.mocker.getComponentUnderTest().getPriority());
+        Assert.assertEquals(100, this.mocker.getComponentUnderTest().getPriority());
     }
+
 }

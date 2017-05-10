@@ -24,27 +24,13 @@ import org.phenotips.data.permissions.PatientAccess;
 import org.phenotips.data.permissions.PermissionsManager;
 import org.phenotips.data.permissions.Visibility;
 import org.phenotips.security.authorization.AuthorizationModule;
-
-import org.xwiki.component.annotation.Component;
 import org.xwiki.model.reference.EntityReference;
 import org.xwiki.security.authorization.Right;
 import org.xwiki.users.User;
 
 import javax.inject.Inject;
-import javax.inject.Named;
-import javax.inject.Singleton;
 
-/**
- * Implementation that allows access to a Collaborator based on the Access
- * Level.
- *
- * @version $Id$
- * @since 1.0RC1
- */
-@Component
-@Named("collaborator-access")
-@Singleton
-public class CollaboratorAccessAuthorizationModule implements AuthorizationModule {
+public class VisibilityAccessAuthorizationModule implements AuthorizationModule {
 
     /** Checks to see if document is a patient (DocumentReference). */
     @Inject
@@ -58,13 +44,12 @@ public class CollaboratorAccessAuthorizationModule implements AuthorizationModul
 
     @Override
     public int getPriority() {
-        return 350;
+        return 100;
     }
 
     @Override
     public Boolean hasAccess(User user, Right access, EntityReference entity) {
-        // Checks to see if the user, access or patient is null.
-        if (user == null || access == null || entity == null) {
+        if(user == null || access == null || entity == null) {
             return null;
         }
 
@@ -73,18 +58,16 @@ public class CollaboratorAccessAuthorizationModule implements AuthorizationModul
         if (patient == null) {
             return null;
         }
-        PatientAccess patientAccess = this.permissionsManager.getPatientAccess(patient);
-        // This retrieves the access level for the patient.
-        AccessLevel grantedAccess = patientAccess.getAccessLevel(user.getProfileDocument());
-        // This retrieves the access level for the collaborator.
-        AccessLevel requestedAccess = this.permissionsManager.resolveAccessLevel(access.getName());
 
-        // This grants access if nothing is null and the collaborator has the
-        // required access level.
-        if (grantedAccess != null && requestedAccess != null && grantedAccess.compareTo(requestedAccess) >= 0) {
+        Visibility visibility = this.permissionsManager.getDefaultVisibility();
+
+        // Checks if the visibility of Patient Record and the access rights
+        if(visibility.getName().equals("open") && access.getName().equals("edit")) {
+            return true;
+        }
+        else if (visibility.getName().equals("public") && access.getName().equals("view")) {
             return true;
         }
         return null;
     }
-
 }

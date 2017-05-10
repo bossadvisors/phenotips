@@ -6,6 +6,7 @@ org.phenotips.data.permissions.internal.ManageRightRegistrationEventListener
 org.phenotips.data.permissions.internal.OwnerUpdateEventListener
 org.phenotips.data.permissions.internal.CollaboratorAccessAuthorizationModule
 org.phenotips.data.permissions.internal.OwnerAccessAuthorizationModule
+org.phenotips.data.permissions.internal.VisibilityAccessAuthorizationModule
 org.phenotips.data.permissions.internal.RightsUpdateEventListener
 org.phenotips.data.permissions.internal.SecurePermissionsManager
 org.phenotips.data.permissions.internal.VCFAccessRestrictionEventListener
